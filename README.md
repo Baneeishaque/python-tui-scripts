@@ -475,6 +475,8 @@ COPY . .
 CMD [ "python", "./pip_cache_directories.py" ]
 ```
 
+> **Note:** The Docker image uses Python 3.7.3 while local development uses Python 3.10.16 (via mise). The scripts are compatible with both versions.
+
 ### `Vagrantfile`
 Local development VM with Alpine Linux:
 - Base box: `generic/alpine38`
