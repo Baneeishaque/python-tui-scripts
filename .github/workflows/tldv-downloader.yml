@@ -1,0 +1,91 @@
+name: TLDV Downloader
+
+on:
+  push:
+    paths:
+      - 'tldv_downloader.py'
+      - 'requirements.txt'
+      - 'mise.toml'
+  pull_request:
+    paths:
+      - 'tldv_downloader.py'
+      - 'requirements.txt'
+      - 'mise.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  lint:
+    name: Lint and Security Scan
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Run actionlint
+        uses: reviewdog/action-actionlint@v1.69.1
+        with:
+          fail_level: error
+
+  tldv-downloader:
+    name: TLDV Downloader
+    needs: lint
+    runs-on: ubuntu-24.04
+    env:
+      MEETING_URL: ${{ secrets.MEETING_URL }}
+      AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Set up tools with mise
+        uses: jdx/mise-action@v3.5.1
+        with:
+          version: 'v2025.12.13'
+          install: true
+          cache: true
+
+      - name: Install Python dependencies
+        run: |
+          mise exec -- pip install --verbose -r requirements.txt
+
+      - name: Install N_m3u8DL-RE (latest stable)
+        run: ./.github/scripts/install_dependencies.bash
+        shell: bash
+
+      - name: Run Downloader
+        id: tldv-downloader
+        run: ./.github/scripts/run_downloader.bash
+        shell: bash
+
+      - name: Prepare Artifacts
+        run: ./.github/scripts/prepare_artifacts.bash
+        shell: bash
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: meeting-downloads-${{ github.run_id }}
+          path: artifacts/
+
+      - name: Finalize Status & Handle Failure
+        if: always()
+        run: ./.github/scripts/finalize_workflow.bash
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOWNLOADER_OUTCOME: ${{ steps.tldv-downloader.outcome }}
+          RUN_ID: ${{ github.run_id }}
+          ACTOR: ${{ github.actor }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
