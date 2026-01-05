@@ -20,7 +20,7 @@ try:
     name = meeting.get("name", "No name")
     createdAt = meeting.get("createdAt", datetime.now())
     source = response.get("video", {}).get("source", None)
-    date = datetime.strptime((createdAt), "%Y-%m-%dT%H:%M:%S.%fZ")
+    date = datetime.strptime(createdAt, "%Y-%m-%dT%H:%M:%S.%fZ")
     normalised_date = date.strftime("%Y-%m-%d-%H-%M-%S")
     # Sanitize name for filename
     safe_name = name.replace("/", "-").replace("\\", "-").replace(":", "-").replace("*", "-").replace("?", "-").replace("\"", "-").replace("<", "-").replace(">", "-").replace("|", "-")
